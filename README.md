@@ -3,13 +3,14 @@
 An extensible feature-engineering engine for IMU signals (accelerometer,
 gyroscope, magnetometer). Give it a window of raw sensor samples and it
 extracts a large, well-organized set of engineered features spanning
-thirteen feature families — statistical, magnitude, frequency,
+fourteen feature families — statistical, magnitude, frequency,
 geometrical, mechanical, cross-axis, nonlinear/entropy, topological,
 wavelet, orientation (sensor fusion), gait, coupling (exterior-algebra
-accel/gyro coupling), and spherical-wave (non-Euclidean directional
-statistics + spherical-harmonic wave analysis) — with a plug-in registry
-so new families or individual features are a few lines of code away, no
-engine changes required.
+accel/gyro coupling), spherical-wave (non-Euclidean directional statistics
++ spherical-harmonic wave analysis), and random-matrix (cross-channel
+signal-vs-noise eigenvalue spectrum) — with a plug-in registry so new
+families or individual features are a few lines of code away, no engine
+changes required.
 
 See [`docs/FEATURE_TAXONOMY.md`](docs/FEATURE_TAXONOMY.md) for the research
 behind each family and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for
@@ -72,6 +73,7 @@ Run `python examples/quickstart.py` for a full synthetic-walking example.
 | `gait` | step count, cadence, step-interval mean/CV (regularity) |
 | `coupling` | kinematic helicity & chirality index, alignment index, cross-product coupling magnitude (accel/gyro vector algebra) |
 | `spherical_wave` | spherical dispersion/concentration (Fisher directional statistics), geodesic path length & dominant frequency, spherical-harmonic dipole/quadrupole power |
+| `random_matrix` | Marchenko-Pastur significant-mode count, spectral entropy/effective rank, leading-eigenvector participation ratio (cross-channel correlation matrix) |
 
 ## Development
 

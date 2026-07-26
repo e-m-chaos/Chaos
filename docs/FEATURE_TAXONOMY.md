@@ -277,6 +277,51 @@ native to that curved setting, not borrowed from flat-space analysis:
   `geodesic_path_length` is the total distance traveled along the sphere,
   the curved-space analog of `waveform_length`.
 
+## 14. Random-matrix (cross-channel spectral) features
+
+Every family so far analyzes one sensor, or a fixed pair, at a time. This
+family instead stacks *every available sensor's* x/y/z channels into a
+single data matrix and asks a question from random matrix theory (RMT): of
+the eigenvalues of the resulting cross-channel correlation matrix, how many
+are larger than pure noise could ever produce?
+
+For a window of `n` samples and `p = 3 * (number of sensors present)`
+standardized channels, the **Marchenko-Pastur law** (Marcenko & Pastur,
+1967) predicts the eigenvalue spectrum of the correlation matrix of `p`
+*independent, uncorrelated* channels: it is supported on
+`[(1 - sqrt(q))^2, (1 + sqrt(q))^2]` with `q = p / n`. Real IMU channels
+are never independent — gravity, gait rhythm, and shared rigid-body motion
+couple every axis of every sensor together — so genuine motion structure
+shows up as eigenvalues escaping *above* that noise bulk. This is the exact
+technique used to separate signal from noise in financial correlation
+matrices (Laloux et al.'s correlation-matrix "cleaning" in portfolio
+theory) and in neuroscience functional-connectivity analysis. `rmt_spectrum`
+reports the number/fraction of statistically significant modes, the
+leading eigenvalue's strength relative to the channel count, and the
+Shannon-entropy-based *effective rank* (`exp(entropy)` of the normalized
+eigenvalues — the standard participation-ratio definition of effective
+dimensionality, Roy & Vetterli 2007): all measure how many *independent
+coordinated modes of motion* are present, as opposed to counting axes or
+sensors, which only tells you how much you happened to record.
+
+`rmt_leading_mode` complements this with the inverse participation ratio
+(IPR) of the leading eigenvector, converted to an *effective channel
+count* (`1 / IPR`): whether the dominant coordinated-motion mode is spread
+broadly across most channels (e.g. gravity, felt on every accelerometer
+axis and, through gait-linked rotation, every gyroscope axis) or
+concentrated on just a couple. Verified on synthetic data: independent
+noise across 6 channels gives 0 significant modes and effective rank near
+6; a single sinusoid driving all 6 channels gives exactly 1 significant
+mode, effective rank near 1, and an effective channel count near 6
+(broadly shared); coupling confined to only two channels still gives 1
+significant mode, but an effective channel count near 2 (narrowly shared)
+— exactly distinguishing *how many* modes exist from *how widely* each one
+is expressed.
+
+Because this genuinely needs more than one sensor's worth of channels,
+it's registered with `scope="fusion"`, requiring at least accel+gyro and
+opportunistically widening to include the magnetometer when present.
+
 ## Extending the taxonomy
 
 The registry (`imu_features.core.registry`) is a plain decorator-based
@@ -298,3 +343,7 @@ implemented:
 - **Higher-degree spherical harmonics** (`l=3+`) for family #13, or a full
   angular bispectrum, for projects that need finer-grained directional
   shape than the dipole/quadrupole power already captures.
+- **Time-resolved RMT**: family #14 summarizes one correlation matrix per
+  window; a natural extension is a sliding covariance estimate to see how
+  the significant-mode structure itself evolves (e.g. a transition from 1
+  dominant mode to 2 could flag a change in activity type).

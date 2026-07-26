@@ -10,6 +10,7 @@ from . import magnitude  # noqa: F401
 from . import mechanical  # noqa: F401
 from . import nonlinear  # noqa: F401
 from . import orientation  # noqa: F401
+from . import random_matrix  # noqa: F401
 from . import spherical_wave  # noqa: F401
 from . import statistical  # noqa: F401
 from . import topological  # noqa: F401
