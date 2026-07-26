@@ -6,6 +6,7 @@ from . import crossaxis  # noqa: F401
 from . import frequency  # noqa: F401
 from . import gait  # noqa: F401
 from . import geometrical  # noqa: F401
+from . import information_flow  # noqa: F401
 from . import magnitude  # noqa: F401
 from . import mechanical  # noqa: F401
 from . import nonlinear  # noqa: F401
@@ -14,4 +15,5 @@ from . import random_matrix  # noqa: F401
 from . import spherical_wave  # noqa: F401
 from . import statistical  # noqa: F401
 from . import topological  # noqa: F401
+from . import transport  # noqa: F401
 from . import wavelet  # noqa: F401

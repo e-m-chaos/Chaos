@@ -322,6 +322,62 @@ Because this genuinely needs more than one sensor's worth of channels,
 it's registered with `scope="fusion"`, requiring at least accel+gyro and
 opportunistically widening to include the magnetometer when present.
 
+## 15. Optimal-transport (Wasserstein) features
+
+The `statistical` family summarizes a channel's distribution with moments
+(mean, variance, skewness, kurtosis) — cheap but lossy, since two very
+differently-shaped distributions can share the same first four moments.
+This family instead measures a **distance between whole distributions**,
+using the 1-Wasserstein (earth mover's / Kantorovich-Rubinstein) metric:
+the minimum "cost" of reshaping one distribution into another, where cost
+is probability mass times the distance it has to move. In one dimension it
+has a simple closed form — the mean absolute difference between the two
+distributions' quantile functions — so it costs no more to compute than a
+sort.
+
+Three reference comparisons: `wasserstein_gaussian_distance` (an
+interpretable, original-units measure of non-normality, unlike unitless
+skewness/kurtosis), `wasserstein_uniform_distance` (how far the channel is
+from being evenly spread across its own observed range, vs. peaked or
+bimodal), and `wasserstein_split_half_distance` (the distance between the
+window's first-half and second-half empirical distributions — a direct
+non-stationarity/regime-shift measure that every other family implicitly
+assumes away by treating the whole window as one coherent distribution).
+
+## 16. Information-flow features (directed/causal coupling)
+
+Every cross-sensor relationship computed elsewhere in this engine is
+symmetric: Pearson correlation, the `coupling` family's dot/cross product,
+and the `random_matrix` family's eigenvalue spectrum all treat "accel
+relates to gyro" the same as "gyro relates to accel." **Transfer entropy**
+(Schreiber, 2000) breaks that symmetry. For source `X` and target `Y`:
+
+```
+TE(X -> Y) = sum p(y_t+1, y_t, x_t) * log[ p(y_t+1 | y_t, x_t) / p(y_t+1 | y_t) ]
+```
+
+— it asks whether the source's recent past reduces uncertainty about the
+target's next value *beyond* what the target's own past already tells you.
+`TE(X -> Y) != TE(Y -> X)` in general, and that asymmetry is the entire
+point: a high `accel_to_gyro` alongside a low `gyro_to_accel` means linear
+motion is *driving* angular motion beyond simple synchrony (e.g. a limb's
+translational swing inducing its own rotation), while the reverse pattern
+suggests rotation-first motion.
+
+The implementation is the standard histogram/plug-in estimator — each
+signal discretized into quantile-balanced symbols, probabilities estimated
+from empirical joint counts — which is known to carry a small positive
+bias at finite sample sizes (confirmed here too: independent noise at
+realistic window lengths yields small nonzero transfer entropy in both
+directions rather than exactly zero). Verified on synthetic data: a signal
+explicitly driven by a 1-sample-lagged copy of the other shows transfer
+entropy roughly an order of magnitude higher in the true causal direction
+than in reverse, and clearly above the independent-noise baseline in
+either direction; `net` (the directional difference) is the
+recommended feature to consume for exactly this reason — it isolates the
+asymmetry, which is far more robust to the estimator's bias than either
+raw directional value.
+
 ## Extending the taxonomy
 
 The registry (`imu_features.core.registry`) is a plain decorator-based
@@ -347,3 +403,9 @@ implemented:
   window; a natural extension is a sliding covariance estimate to see how
   the significant-mode structure itself evolves (e.g. a transition from 1
   dominant mode to 2 could flag a change in activity type).
+- **Bias-corrected transfer entropy** for family #16 (e.g. subtracting a
+  shuffled-surrogate baseline) to make absolute TE values, not just their
+  directional comparison, safe to use across differently-sized windows.
+- **2-Wasserstein / Sinkhorn distances** for family #15 between full
+  multivariate (not per-channel) distributions, for projects that want a
+  single transport-based distance across all three axes jointly.

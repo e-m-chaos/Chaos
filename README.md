@@ -3,14 +3,15 @@
 An extensible feature-engineering engine for IMU signals (accelerometer,
 gyroscope, magnetometer). Give it a window of raw sensor samples and it
 extracts a large, well-organized set of engineered features spanning
-fourteen feature families — statistical, magnitude, frequency,
+sixteen feature families — statistical, magnitude, frequency,
 geometrical, mechanical, cross-axis, nonlinear/entropy, topological,
 wavelet, orientation (sensor fusion), gait, coupling (exterior-algebra
 accel/gyro coupling), spherical-wave (non-Euclidean directional statistics
-+ spherical-harmonic wave analysis), and random-matrix (cross-channel
-signal-vs-noise eigenvalue spectrum) — with a plug-in registry so new
-families or individual features are a few lines of code away, no engine
-changes required.
++ spherical-harmonic wave analysis), random-matrix (cross-channel
+signal-vs-noise eigenvalue spectrum), transport (Wasserstein distributional
+distances), and information-flow (directed transfer entropy) — with a
+plug-in registry so new families or individual features are a few lines of
+code away, no engine changes required.
 
 See [`docs/FEATURE_TAXONOMY.md`](docs/FEATURE_TAXONOMY.md) for the research
 behind each family and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for
@@ -74,6 +75,8 @@ Run `python examples/quickstart.py` for a full synthetic-walking example.
 | `coupling` | kinematic helicity & chirality index, alignment index, cross-product coupling magnitude (accel/gyro vector algebra) |
 | `spherical_wave` | spherical dispersion/concentration (Fisher directional statistics), geodesic path length & dominant frequency, spherical-harmonic dipole/quadrupole power |
 | `random_matrix` | Marchenko-Pastur significant-mode count, spectral entropy/effective rank, leading-eigenvector participation ratio (cross-channel correlation matrix) |
+| `transport` | Wasserstein distance to Gaussian/Uniform references, first-half-vs-second-half distributional drift |
+| `information_flow` | transfer entropy accel↔gyro (directed, causal information flow) and its net directionality |
 
 ## Development
 
