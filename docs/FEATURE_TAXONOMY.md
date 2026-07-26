@@ -232,6 +232,51 @@ Because it inherently needs both sensors at once, `coupling` is registered
 with `scope="fusion"` (the same mechanism introduced for `orientation`) and
 requires `("accel", "gyro")`.
 
+## 13. Spherical-wave features (non-Euclidean geometry)
+
+Every family so far treats a channel as living in flat, Euclidean space —
+even the topological family's phase-space embedding is a point cloud in
+flat R^dim. This family instead puts the *direction* of a triaxial vector,
+`u(t) = v(t) / |v(t)|`, on the unit 2-sphere S^2: a curved Riemannian
+manifold of constant positive curvature. Two pieces of mathematics that are
+native to that curved setting, not borrowed from flat-space analysis:
+
+- **Directional (Fisher) statistics.** On a line, dispersion is variance.
+  On a sphere, the curvature-correct analog is `1 - R`, where
+  `R = |mean(u_i)|` is the *mean resultant length* — Fisher's spherical
+  variance (Fisher, 1953). Its companion is the concentration parameter
+  `kappa` of the fitted von Mises-Fisher distribution (the sphere's analog
+  of a Gaussian), estimated via the standard `p=3` approximation
+  `kappa ~= R(3-R^2)/(1-R^2)` (Mardia & Jupp, *Directional Statistics*):
+  large `kappa` means the direction samples cluster tightly around one
+  point on the sphere; small `kappa` means they're widely spread.
+- **Spherical harmonics as the sphere's "waves."** On a line, waves are
+  sines and cosines — eigenfunctions of the flat Laplacian — and a Fourier
+  transform expands a signal in that basis. On a sphere, the eigenfunctions
+  of the Laplace-Beltrami operator are the *spherical harmonics* `Y_lm`,
+  and expanding the direction samples in that basis gives an *angular power
+  spectrum* `C_l`: the sphere's exact analog of a Fourier power spectrum,
+  but for waves that live on curved space. `spherical_dipole_power` (`C_1`)
+  and `spherical_quadrupole_power` (`C_2`) are the sphere's two lowest
+  nontrivial wave modes, estimated from the empirical harmonic moments of
+  the direction samples — the same estimator used to build angular power
+  spectra from scattered directional data in other fields (e.g. CMB
+  temperature maps, crystallographic pole figures). Quadrupole power is
+  magnitude-invariant and purely about directional anisotropy, unlike the
+  `geometrical` family's PCA descriptors, which operate on the raw (not
+  normalized) vectors and mix magnitude with direction.
+- **Geodesic (great-circle) distance as the family's literal wave.** The
+  distance `arccos(u(t) . u(t+1))` between consecutive direction samples is
+  the sphere's intrinsic angular-speed signal — the non-Euclidean analog of
+  a first difference, since it's measured along the curved surface rather
+  than as a straight Euclidean chord. Treating that speed sequence as a
+  time series and taking its FFT (`geodesic_dominant_frequency`,
+  `geodesic_spectral_energy`) measures oscillation *of the manifold
+  trajectory itself* — a genuinely different "frequency" than anything in
+  the `frequency` family, which never leaves flat amplitude space.
+  `geodesic_path_length` is the total distance traveled along the sphere,
+  the curved-space analog of `waveform_length`.
+
 ## Extending the taxonomy
 
 The registry (`imu_features.core.registry`) is a plain decorator-based
@@ -250,3 +295,6 @@ implemented:
   scalars over the whole window; a natural extension is their own
   time-domain or frequency-domain features (e.g. does the alignment index
   itself oscillate at the step frequency?), rather than only mean/std.
+- **Higher-degree spherical harmonics** (`l=3+`) for family #13, or a full
+  angular bispectrum, for projects that need finer-grained directional
+  shape than the dipole/quadrupole power already captures.
