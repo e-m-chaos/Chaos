@@ -48,7 +48,9 @@ def main():
 
     # Use every family: a per-sensor, per-channel/triaxial sweep across
     # statistical, magnitude, frequency, geometrical, mechanical, cross-axis,
-    # nonlinear, topological, and wavelet feature families.
+    # nonlinear, topological, and wavelet feature families, plus the
+    # multi-sensor fusion families (orientation, since accel+gyro are both
+    # present) and gait (step detection on the acceleration channels).
     engine = FeatureEngine(families=REGISTRY.families())
     table = engine.extract_many(windows)
 
@@ -60,6 +62,16 @@ def main():
     print("Example feature values from window 0:")
     for key in sorted(first_window_features)[:10]:
         print(f"  {key}: {first_window_features[key]:.4f}")
+
+    print("Orientation fusion features (accel+gyro):")
+    for key, value in sorted(first_window_features.items()):
+        if key.startswith("fusion_"):
+            print(f"  {key}: {value:.4f}")
+
+    print("Gait features (accel z-axis):")
+    for key, value in sorted(first_window_features.items()):
+        if "_gait_" in key and "_z_" in key:
+            print(f"  {key}: {value:.4f}")
 
 
 if __name__ == "__main__":

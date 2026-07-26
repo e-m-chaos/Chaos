@@ -42,6 +42,14 @@ def my_feature(x, sample_rate=None):
 - `scope="triaxial"`: `data` is the full `(n_samples, 3)` array for one
   sensor. Use this when the feature genuinely needs all three axes at once
   (PCA shape descriptors, cross-axis correlation, orientation angles).
+- `scope="fusion"`: for features that need *more than one sensor* at once
+  (e.g. fusing accelerometer + gyroscope into an orientation estimate). The
+  signature is different — `func(window: IMUWindow) -> Dict[str, float]` —
+  because a fusion feature typically produces several named sub-values
+  (e.g. `roll_mean`, `roll_std`, `pitch_mean`) rather than one scalar. It
+  declares the sensors it needs via `requires=("accel", "gyro")`; the
+  engine calls it once per window (not once per sensor) and skips it
+  entirely if any required sensor is missing.
 - `min_samples` lets a feature declare it needs a minimum window length
   (e.g. sample entropy needs enough points for reliable template matching);
   the engine returns `nan` instead of calling the function if the window is
@@ -66,6 +74,8 @@ family/feature name). `engine.extract(window)` then produces a flat
   `accel_x_statistical_mean`, `gyro_mag_frequency_dominant_frequency`.
 - Triaxial-scope features: `{sensor}_triaxial_{family}_{feature}`, e.g.
   `accel_triaxial_geometrical_pca_linearity`.
+- Fusion-scope features: `fusion_{family}_{feature}_{subname}`, e.g.
+  `fusion_orientation_complementary_tilt_roll_mean`.
 
 This naming convention is deliberately flat and greppable — no nested
 dicts — so the output plugs directly into a pandas DataFrame row

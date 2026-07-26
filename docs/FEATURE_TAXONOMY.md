@@ -162,6 +162,40 @@ signal's power sits — complementary to family #3's *where in frequency*
 view, and often more robust to non-stationary bursts (e.g. a single sharp
 impact) because wavelets are localized in time as well as scale.
 
+## 10. Orientation (sensor-fusion) features
+
+Every family above operates on one sensor at a time. Orientation is
+different — real attitude estimation requires *fusing* sensors: gyroscope
+integration is accurate over short timescales but drifts, while
+accelerometer-derived tilt is drift-free but noisy and only valid when
+gravity dominates the reading. The classic remedy is a **complementary
+filter**: blend integrated gyro rate with accelerometer tilt, weighted so
+each contributes where it's reliable (Mahony/Madgwick filters formalize the
+same idea; the complementary filter here is the simplest member of that
+family). We compute roll/pitch this way and summarize each with mean, std,
+and range over the window.
+
+Heading is a second fusion problem: a raw magnetometer reading only gives a
+usable compass bearing once **tilt-compensated** using the accelerometer's
+roll/pitch — otherwise tilting the device rotates the apparent heading.
+`tilt_compensated_heading` implements the standard tilt-compensation
+formula and reports the heading's circular mean and circular standard
+deviation (heading is an angle, so ordinary mean/std would be wrong at the
+0°/360° wrap).
+
+Because these need more than one sensor, they're registered with
+`scope="fusion"` (see `docs/ARCHITECTURE.md`): each declares which sensors
+it `requires`, and the engine silently omits it for a window missing one.
+
+## 11. Gait / step-detection features
+
+A specialization of families #1 and #3 tuned specifically to locomotion:
+peak-based step detection on an acceleration channel (`scipy.signal.find_peaks`
+with an amplitude threshold and a minimum inter-step distance) yields step
+count and cadence (steps/minute) directly, and the coefficient of variation
+of the resulting step intervals is a standard gait-regularity index used in
+fall-risk and rehabilitation research — a more regular gait has a lower CV.
+
 ## Extending the taxonomy
 
 The registry (`imu_features.core.registry`) is a plain decorator-based
@@ -169,16 +203,14 @@ plug-in point — `docs/ARCHITECTURE.md` explains how to add a new family or
 feature without touching the engine. Natural next candidates, not yet
 implemented:
 
-- **Orientation/attitude family**: full quaternion or Euler-angle
-  estimation via complementary or Kalman/Madgwick filtering across a
-  gyroscope + accelerometer (+ magnetometer) fusion, rather than the
-  quasi-static angle estimate in family #4.
-- **Step/gait family**: peak-based step detection, stride time, cadence,
-  gait symmetry/regularity indices — specializations of families #1, #3,
-  and #7 tuned to locomotion.
 - **Higher-dimensional persistent homology** (H1/H2) via `gudhi`/`ripser`
   as an optional extra, for projects that want loop/void structure beyond
-  the H0 features already included.
-- **Cross-sensor features**: correlation/coherence between accelerometer
-  and gyroscope channels (as opposed to family #6's within-sensor,
-  cross-axis view).
+  the H0 features already included in family #8.
+- **Cross-sensor (non-fusion) features**: correlation/coherence between
+  accelerometer and gyroscope channels (as opposed to family #6's
+  within-sensor, cross-axis view) — a `scope="fusion"` feature that returns
+  one value per axis pair rather than a full attitude estimate.
+- **Madgwick/Mahony quaternion fusion**: the complementary filter in family
+  #10 is deliberately the simplest fusion scheme; a full quaternion-based
+  Madgwick filter would give a more accurate, gimbal-lock-free attitude at
+  the cost of more state to carry across the window.

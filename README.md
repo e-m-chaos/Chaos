@@ -2,11 +2,12 @@
 
 An extensible feature-engineering engine for IMU signals (accelerometer,
 gyroscope, magnetometer). Give it a window of raw sensor samples and it
-extracts a large, well-organized set of engineered features spanning nine
+extracts a large, well-organized set of engineered features spanning eleven
 feature families — statistical, magnitude, frequency, geometrical,
-mechanical, cross-axis, nonlinear/entropy, topological, and wavelet — with a
-plug-in registry so new families or individual features are a few lines of
-code away, no engine changes required.
+mechanical, cross-axis, nonlinear/entropy, topological, wavelet,
+orientation (sensor fusion), and gait — with a plug-in registry so new
+families or individual features are a few lines of code away, no engine
+changes required.
 
 See [`docs/FEATURE_TAXONOMY.md`](docs/FEATURE_TAXONOMY.md) for the research
 behind each family and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for
@@ -65,6 +66,8 @@ Run `python examples/quickstart.py` for a full synthetic-walking example.
 | `nonlinear` | Shannon/sample/approximate/permutation entropy, Hurst exponent, DFA, fractal dimension |
 | `topological` | 0-dim persistent homology (total/max/entropy), recurrence rate, determinism, laminarity |
 | `wavelet` | Haar wavelet per-level energy ratios and energy entropy |
+| `orientation` | complementary-filter roll/pitch (accel+gyro fusion), tilt-compensated heading (accel+mag fusion) |
+| `gait` | step count, cadence, step-interval mean/CV (regularity) |
 
 ## Development
 

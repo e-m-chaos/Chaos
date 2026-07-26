@@ -18,8 +18,10 @@ class FeatureEngine:
     With neither argument, every registered feature is used.
 
     Output keys follow ``{sensor}_{channel}_{family}_{feature}`` for
-    per-channel features (channel in x/y/z/mag) and
-    ``{sensor}_triaxial_{family}_{feature}`` for whole-vector features.
+    per-channel features (channel in x/y/z/mag), ``{sensor}_triaxial_{family}_{feature}``
+    for whole-vector features, and ``fusion_{family}_{feature}_{subname}`` for
+    multi-sensor fusion features (e.g. orientation), which are skipped for a
+    window that lacks any of their required sensors.
     """
 
     def __init__(
@@ -54,7 +56,9 @@ class FeatureEngine:
 
     def extract(self, window: IMUWindow) -> Dict[str, float]:
         out: Dict[str, float] = {}
-        for sensor_name, arr in window.sensors().items():
+        sensors = window.sensors()
+
+        for sensor_name, arr in sensors.items():
             channels = {
                 "x": arr[:, 0],
                 "y": arr[:, 1],
@@ -66,9 +70,20 @@ class FeatureEngine:
                     for ch_name, ch_data in channels.items():
                         key = f"{sensor_name}_{ch_name}_{spec.family}_{spec.name}"
                         out[key] = self._call(spec, ch_data, window.sample_rate)
-                else:  # triaxial
+                elif spec.scope == "triaxial":
                     key = f"{sensor_name}_triaxial_{spec.family}_{spec.name}"
                     out[key] = self._call(spec, arr, window.sample_rate)
+
+        for spec in self.selected:
+            if spec.scope != "fusion":
+                continue
+            if not all(required in sensors for required in spec.requires):
+                continue
+            if window.n_samples < spec.min_samples:
+                continue
+            for subname, value in spec.func(window).items():
+                out[f"fusion_{spec.family}_{spec.name}_{subname}"] = float(value)
+
         return out
 
     @staticmethod
