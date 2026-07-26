@@ -1,6 +1,7 @@
 """Importing this module registers every built-in feature family with the
 global registry (imu_features imports it automatically on package import)."""
 
+from . import coupling  # noqa: F401
 from . import crossaxis  # noqa: F401
 from . import frequency  # noqa: F401
 from . import gait  # noqa: F401

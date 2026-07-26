@@ -196,6 +196,42 @@ count and cadence (steps/minute) directly, and the coefficient of variation
 of the resulting step intervals is a standard gait-regularity index used in
 fall-risk and rehabilitation research — a more regular gait has a lower CV.
 
+## 12. Coupling features (exterior algebra between sensors)
+
+Every family above (including orientation) either operates on one sensor,
+or fuses sensors specifically to *estimate attitude*. The coupling family
+instead asks a narrower algebraic question: at each instant, how related
+are the accelerometer vector and the gyroscope vector, independent of what
+either means physically on its own?
+
+Treating `accel(t)` and `gyro(t)` as two vectors in R^3 at each sample, two
+classical vector-algebra operations answer that:
+
+- **Dot product** `accel(t) . gyro(t)`: a pseudoscalar directly analogous
+  to *kinetic helicity* in fluid mechanics (`v . omega`, a measure of how
+  "corkscrew-like" a flow is) and to the linear/angular momentum coupling
+  term in rigid-body dynamics. It is large and positive when translation
+  and rotation are aligned (e.g. a hand drilling or a spinning coin/top
+  moving along its own axis), large and negative for the mirror-image
+  motion, and near zero when the two are orthogonal or either is small.
+  Averaged over the window it gives `kinematic_helicity_mean`; its sign
+  pattern gives a **chirality index** — the net fraction of samples with
+  positive vs. negative helicity, i.e. whether the window's motion has a
+  consistent handedness.
+- **Cross product** `accel(t) x gyro(t)`: the corresponding bivector (in 3D
+  the Clifford/geometric-algebra wedge product of two vectors collapses to
+  the ordinary cross product). Its magnitude is the coupling strength with
+  the sign convention removed — large whenever accel and gyro are far from
+  parallel/anti-parallel, regardless of which.
+- **Normalized alignment index**: dividing the dot product by both vector
+  norms gives `cos(theta)` between the two vectors, in `[-1, 1]` — unitless
+  and therefore comparable across sensors, subjects, or recording sessions
+  regardless of amplitude, unlike the raw (unit-mixing) helicity value.
+
+Because it inherently needs both sensors at once, `coupling` is registered
+with `scope="fusion"` (the same mechanism introduced for `orientation`) and
+requires `("accel", "gyro")`.
+
 ## Extending the taxonomy
 
 The registry (`imu_features.core.registry`) is a plain decorator-based
@@ -206,11 +242,11 @@ implemented:
 - **Higher-dimensional persistent homology** (H1/H2) via `gudhi`/`ripser`
   as an optional extra, for projects that want loop/void structure beyond
   the H0 features already included in family #8.
-- **Cross-sensor (non-fusion) features**: correlation/coherence between
-  accelerometer and gyroscope channels (as opposed to family #6's
-  within-sensor, cross-axis view) — a `scope="fusion"` feature that returns
-  one value per axis pair rather than a full attitude estimate.
 - **Madgwick/Mahony quaternion fusion**: the complementary filter in family
   #10 is deliberately the simplest fusion scheme; a full quaternion-based
   Madgwick filter would give a more accurate, gimbal-lock-free attitude at
   the cost of more state to carry across the window.
+- **Time-varying coupling**: family #12 summarizes helicity/alignment
+  scalars over the whole window; a natural extension is their own
+  time-domain or frequency-domain features (e.g. does the alignment index
+  itself oscillate at the step frequency?), rather than only mean/std.
